@@ -2,8 +2,7 @@ name: Daily Lead Generation Pipeline
 
 on:
   schedule:
-    # 5:00 AM IST is 11:30 PM UTC (previous day)
-    - cron: '30 23 * * *'
+    - cron: '30 23 * * *'  # 5 AM IST
   workflow_dispatch:
 
 jobs:
@@ -11,34 +10,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
-        uses: actions/checkout@v4
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm install
 
-      - name: Run Lead Pipeline
-        env:
-          NODE_ENV: production
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          EMAIL_TO: ${{ secrets.EMAIL_TO }}
-          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-          SERP_API_KEY: ${{ secrets.SERP_API_KEY }}
-          TARGET_CITY: ${{ secrets.TARGET_CITY }}
-          TARGET_NICHE: ${{ secrets.TARGET_NICHE }}
-          DAILY_LEAD_LIMIT: ${{ secrets.DAILY_LEAD_LIMIT }}
-          SCRAPE_LIMIT: ${{ secrets.SCRAPE_LIMIT }}
-          MIN_SCORE_THRESHOLD: ${{ secrets.MIN_SCORE_THRESHOLD }}
+      - name: Run script
         run: node index.js
