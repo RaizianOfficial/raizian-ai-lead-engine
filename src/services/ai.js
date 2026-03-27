@@ -18,7 +18,7 @@ async function qualifyLead(lead) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }); 
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' }); 
 
     const prompt = `
     Analyze the following local business to determine its quality as a lead for digital marketing/tech services.
