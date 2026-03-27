@@ -2,9 +2,10 @@ const admin = require('firebase-admin');
 
 if (!admin.apps.length) {
     try {
-        const privateKey = process.env.FIREBASE_PRIVATE_KEY 
-            ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-            : undefined;
+        let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+        if (privateKey) {
+            privateKey = privateKey.replace(/^"|"$/g, '').replace(/^'|'$/g, '').replace(/\\n/g, '\n');
+        }
 
         admin.initializeApp({
             credential: admin.credential.cert({
