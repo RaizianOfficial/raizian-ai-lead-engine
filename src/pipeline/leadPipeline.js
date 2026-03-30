@@ -2,11 +2,13 @@ const { scrapeLeads } = require('../services/scraper');
 const { saveLead, isLeadSent, markLeadAsSent } = require('../services/db');
 const { qualifyLead } = require('../services/ai');
 const { sendEmailReport } = require('../services/email');
+const { sendBulkMessages } = require('../services/whatsappService');
 
 async function runPipeline() {
-    console.log('🚀 Starting Daily Lead Generation Pipeline...');
+    try {
+        console.log('🚀 Starting Daily Lead Generation Pipeline...');
 
-    const targetCity = process.env.TARGET_CITY || 'Patna';
+        const targetCity = process.env.TARGET_CITY || 'Patna';
     const targetNiche = process.env.TARGET_NICHE || 'gym';
     const scrapeLimit = Number(process.env.SCRAPE_LIMIT) || 50;
     const minScoreThreshold = Number(process.env.MIN_SCORE_THRESHOLD) || 70;
@@ -101,18 +103,25 @@ async function runPipeline() {
     console.log('\n--- STEP 7: Sending Email ---');
     const emailSent = await sendEmailReport(topLeads);
 
-    if (emailSent) {
-        // STEP 8: MARK AS SENT
-        console.log('\n--- STEP 8: Marking Leads as Sent ---');
-        for (const lead of topLeads) {
-            await markLeadAsSent(lead);
+        if (emailSent) {
+            // STEP 8: MARK AS SENT
+            console.log('\n--- STEP 8: Marking Leads as Sent ---');
+            for (const lead of topLeads) {
+                await markLeadAsSent(lead);
+            }
+            console.log('Leads successfully marked as sent.');
+            
+            // STEP 9: WHATSAPP OUTREACH
+            await sendBulkMessages(topLeads);
+        } else {
+            console.error('Email failed to send. Leads were NOT marked as sent.');
         }
-        console.log('Leads successfully marked as sent.');
-    } else {
-        console.error('Email failed to send. Leads were NOT marked as sent.');
-    }
 
-    console.log('\n🏁 Pipeline Execution Complete.');
+        console.log('\n🏁 Pipeline Execution Complete.');
+    } catch (error) {
+        console.error('\n❌ CRITICAL PIPELINE ERROR:', error);
+        throw error; // Rethrow to let index.js handler catch it
+    }
 }
 
 module.exports = { runPipeline };

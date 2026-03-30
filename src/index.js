@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cron = require('node-cron');
 const { runPipeline } = require('./pipeline/leadPipeline');
+const { initWhatsApp } = require('./services/whatsappService');
 
 // Ensure essential environment variables are loaded
 if (!process.env.SERP_API_KEY || !process.env.GEMINI_API_KEY) {
@@ -32,31 +33,49 @@ app.post('/trigger-pipeline', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log('\n===========================================');
-    console.log('🚀 Antigravity Agent: Node Backend Started');
-    console.log('===========================================');
-    console.log(`Running on PORT: ${port}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Target City: ${process.env.TARGET_CITY}`);
-    console.log(`Target Niche: ${process.env.TARGET_NICHE}`);
-    console.log(`Daily Limit: ${process.env.DAILY_LEAD_LIMIT}`);
-    console.log(`CRON Schedule: '${process.env.CRON_SCHEDULE || '0 5 * * *'}'\n`);
-    
-    // START CRON SCHEDULE
-    const cronExpression = process.env.CRON_SCHEDULE || '0 5 * * *';
-    
-    if (cron.validate(cronExpression)) {
-        console.log(`Scheduling daily pipeline run at: ${cronExpression} (Server Time)`);
-        cron.schedule(cronExpression, async () => {
-            console.log(`\n⏰ CRON TRIGGERED: Starting Lead Generation Pipeline...`);
-            try {
-                await runPipeline();
-            } catch (err) {
-                console.error('Error during scheduled pipeline run:', err);
-            }
+// CI/CD Execution Mode: Run once and exit
+if (process.env.RUN_ONCE === 'true') {
+    console.log('⚡ Running in RUN_ONCE mode for CI/CD Pipeline...');
+    runPipeline()
+        .then(() => {
+            console.log('✅ Pipeline execution complete. Exiting gracefully.');
+            process.exit(0);
+        })
+        .catch(err => {
+            console.error('❌ Pipeline failed:', err);
+            process.exit(1);
         });
-    } else {
-        console.error(`❌ Invalid cron expression: ${cronExpression}`);
-    }
-});
+} else {
+    // Server & Scheduler Execution Mode
+    app.listen(port, async () => {
+        // Initialize WhatsApp connection
+        await initWhatsApp().catch(err => console.error('Failed to initialize WhatsApp:', err));
+
+        console.log('\n===========================================');
+        console.log('🚀 Antigravity Agent: Node Backend Started');
+        console.log('===========================================');
+        console.log(`Running on PORT: ${port}`);
+        console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`Target City: ${process.env.TARGET_CITY}`);
+        console.log(`Target Niche: ${process.env.TARGET_NICHE}`);
+        console.log(`Daily Limit: ${process.env.DAILY_LEAD_LIMIT}`);
+        console.log(`CRON Schedule: '${process.env.CRON_SCHEDULE || '0 5 * * *'}'\n`);
+        
+        // START CRON SCHEDULE
+        const cronExpression = process.env.CRON_SCHEDULE || '0 5 * * *';
+        
+        if (cron.validate(cronExpression)) {
+            console.log(`Scheduling daily pipeline run at: ${cronExpression} (Server Time)`);
+            cron.schedule(cronExpression, async () => {
+                console.log(`\n⏰ CRON TRIGGERED: Starting Lead Generation Pipeline...`);
+                try {
+                    await runPipeline();
+                } catch (err) {
+                    console.error('Error during scheduled pipeline run:', err);
+                }
+            });
+        } else {
+            console.error(`❌ Invalid cron expression: ${cronExpression}`);
+        }
+    });
+}

@@ -28,6 +28,7 @@ jobs:
         run: node index.js
         env:
           NODE_ENV: production
+          RUN_ONCE: "true"
 
           GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
 

@@ -8,7 +8,7 @@ async function saveLead(lead) {
     if (!lead.phone) return;
     
     // Clean phone number to use as an ID (remove spaces, symbols)
-    const phoneId = lead.phone.replace(/[^z0-9+]/gi, '') || lead.phone;
+    const phoneId = String(lead.phone).replace(/[^\d+]/g, '') || String(lead.phone);
     
     const leadRef = db.collection('leads').doc(phoneId);
     
@@ -26,7 +26,7 @@ async function saveLead(lead) {
 async function isLeadSent(phone) {
     if (!phone) return false;
     
-    const phoneId = phone.replace(/[^z0-9+]/gi, '') || phone;
+    const phoneId = String(phone).replace(/[^\d+]/g, '') || String(phone);
     const sentLeadDoc = await db.collection('sent_leads').doc(phoneId).get();
     
     return sentLeadDoc.exists;
@@ -39,7 +39,7 @@ async function isLeadSent(phone) {
 async function markLeadAsSent(lead) {
     if (!lead.phone) return;
     
-    const phoneId = lead.phone.replace(/[^z0-9+]/gi, '') || lead.phone;
+    const phoneId = String(lead.phone).replace(/[^\d+]/g, '') || String(lead.phone);
     
     const sentLeadRef = db.collection('sent_leads').doc(phoneId);
     
@@ -50,4 +50,35 @@ async function markLeadAsSent(lead) {
     });
 }
 
-module.exports = { saveLead, isLeadSent, markLeadAsSent };
+/**
+ * Updates metadata for a lead in Firestore.
+ * @param {string} phone - Target phone number.
+ * @param {Object} data - Metadata object to merge.
+ */
+async function updateLeadMeta(phone, data) {
+    if (!phone) return;
+    
+    const phoneId = String(phone).replace(/[^\d+]/g, '') || String(phone);
+    const leadRef = db.collection('leads').doc(phoneId);
+    
+    await leadRef.set(data, { merge: true });
+}
+
+/**
+ * Logs an incoming WhatsApp reply.
+ * @param {string} phoneId - Caller's phone ID.
+ * @param {string} messageText - The text of the reply.
+ */
+async function logReply(phoneId, messageText) {
+    if (!phoneId) return;
+
+    const leadRef = db.collection('leads').doc(phoneId);
+    
+    await leadRef.set({
+        reply_received: true,
+        last_reply: messageText,
+        reply_at: new Date().toISOString()
+    }, { merge: true });
+}
+
+module.exports = { saveLead, isLeadSent, markLeadAsSent, updateLeadMeta, logReply };

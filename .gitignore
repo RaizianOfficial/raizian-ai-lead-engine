@@ -13,3 +13,5 @@ tmp/
 brain/
 artifacts/
 *.local
+wa_auth_info/
+auth_info_baileys/

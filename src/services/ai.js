@@ -53,12 +53,8 @@ async function qualifyLead(lead) {
         const result = await model.generateContent(prompt);
         let text = result.response.text().trim();
         
-        // Remove markdown formatting if Gemini added it despite instructions
-        if (text.startsWith('```json')) {
-            text = text.replace('```json', '').replace('```', '').trim();
-        } else if (text.startsWith('```')) {
-            text = text.replace(/```/g, '').trim();
-        }
+        // Remove markdown formatting completely globally if Gemini added it
+        text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
 
         const data = JSON.parse(text);
         
